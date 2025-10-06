@@ -1,0 +1,27 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local development environment variables
+# Do not commit .env files as they may contain secrets.
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+
+# Caches and build outputs
+.cache/
+dist/
+build/
+
+# IDE / Editor specific
+.vscode/
+.idea/
+.bash_history
+.bashrc
+.bash_logout
