@@ -1,0 +1,15 @@
+{
+  "name": "line-webhook-handler",
+  "version": "1.0.0",
+  "description": "Linebot WebHook handler for Cloud Functions",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@google-cloud/functions-framework": "^4.0.0",
+    "@google/genai": "^1.22.0",
+    "@line/bot-sdk": "^10.3.0",
+    "dotenv": "^17.2.3"
+  }
+}
