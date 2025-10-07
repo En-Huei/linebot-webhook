@@ -3,6 +3,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 const { Client, middleware } = require('@line/bot-sdk');
+const { GoogleGenAI } = require('@google/genai'); // 引入 Gemini SDK
 
 // ***【配置參數】***
 // 建議將機敏資訊透過環境變數或 GCP Secret Manager 傳入，確保安全。
@@ -11,9 +12,19 @@ const config = {
   channelSecret: process.env.LINE_CHANNEL_SECRET, // 您的 LINE Channel Secret
   channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN // 您的 LINE Channel Access Token
 };
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 // 建立 LINE Bot SDK 的 Client 實例 (用於發送回覆)
 const client = new Client(config);
+
+// ----------------------------------------------------
+// 初始化 Gemini 客戶端
+// 由於 Cloud Functions 已經啟用了 Compute Engine Service Account
+// Gemini SDK 會自動使用這個服務帳號進行身份驗證，無需提供 API Key
+// ----------------------------------------------------
+const ai = new GoogleGenAI({
+  apiKey: GEMINI_API_KEY
+});
 
 /**
  * 處理所有 LINE 事件的函數
@@ -25,14 +36,33 @@ async function handleEvent(events) {
     if (event.type === 'message' && event.message.type === 'text') {
       const userMessage = event.message.text;
       
-      // 這是暫時的回覆邏輯，確認通道暢通
-      const replyText = `[安全驗證成功] 您說了: "${userMessage}"。正在準備呼叫 Gemini...`;
-      
-      // 使用 client 發送回覆
-      await client.replyMessage(event.replyToken, {
-        type: 'text',
-        text: replyText
-      });
+      console.log(`Received user message: ${userMessage}`);
+
+      try {
+        // 2. 呼叫 Gemini API
+        const response = await ai.models.generateContent({
+          model: "gemini-2.5-flash", // 選擇高性能、低延遲的模型
+          contents: userMessage,
+        });
+
+        // 3. 取得 Gemini 的回覆文字
+        const geminiResponseText = response.text;
+        
+        // 4. 使用 LINE Client 回覆訊息
+        await client.replyMessage(event.replyToken, {
+          type: 'text',
+          text: geminiResponseText
+        });
+
+      } catch (error) {
+        console.error('Error calling Gemini API or replying to LINE:', error);
+        
+        // 錯誤處理：回覆用戶系統錯誤訊息
+        await client.replyMessage(event.replyToken, {
+          type: 'text',
+          text: '抱歉！系統在呼叫 Gemini 服務時發生錯誤，請稍後再試。'
+        });
+      }
     }
   }
 }
